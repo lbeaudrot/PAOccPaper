@@ -1,0 +1,74 @@
+---
+title: "Simulation analysis - dynamic models"
+author: "Jorge A. Ahumada"
+date: "March 17, 2016"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(unmarked)
+```
+
+### Function to simulate the data
+Using this function to simulate a dynamic occupancy model with *n* points, *t* years (primary periods), *d* days (secondary periods), initial occupancy $\psi$, survival probability $\phi$, colonization probability $\gamma$ and detection probabilty *p*:
+```{r cars}
+data.generator<-function(points,days,psi,p,phi,gamma,years) {
+        require(unmarked)
+        #first year of data
+        y1<-matrix(NA,nr=points,nc=days)
+        #generate the expected occupancies
+        z<-rbinom(points,1,psi)
+        #generate the observations
+        for(i in 1:points)
+                y1[i,]<-rbinom(days,1,z[i]*p)
+        #subsequent years
+        #three dimensional matrix to store the results
+        yk<-array(NA,dim=c(points,days,years))
+        yk[,,1]<-y1
+        for(k in 2:years){
+        #generate the deterministic part of the model
+                occ<-apply(yk[,,k-1],1,max,na.rm=T)
+                z<-rbinom(points,1,occ*phi+(1-occ)*gamma)
+        #generate the observations
+        for(i in 1:points)
+                yk[i,,k]<-rbinom(days,1,z[i]*p)
+     
+        }  
+        # convert results to a two dimensional matrix for colext
+        yk <- matrix(yk, points, days*years)
+        #ny <- matrix(as.character(1:years),nrow(yk), years, byrow=TRUE)
+        # store data in an unmarkedMultFrame object so it is ready for analysis
+        yUMF <- unmarkedMultFrame(y = yk, numPrimary = years)
+        yUMF
+ } 
+```
+Simulate some data:
+```{r}
+set.seed(400)
+data <- data.generator(points = 30,days = 30, psi = 0.5, p = 0.2, phi = 0.2, 
+                       gamma = 0.1, years = 5)
+
+#Look at the first year of data
+summary(data)
+```
+Now, fit a dynamic occupancy model using colext
+```{r}
+model <- colext(psiformula = ~1,gammaformula = ~1,epsilonformula = ~1, 
+                pformula = ~1, data = data, method = "BFGS",se = FALSE)
+summary(model)
+backTransform(model,type=c("psi"))
+backTransform(model,type=c("col"))
+backTransform(model,type=c("ext"))
+backTransform(model,type=c("det"))
+```
+Now compare the 
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(smoothed(model))
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

@@ -1,0 +1,33 @@
+#Lydia's notes from first meeting
+
+PART I 
+Examine power of sampling design for detecting changes in occupancy over time
+	
+Questions:
+1)	How many sample sites do we need to detect X% change in occupancy over time?  (e.g. 30, 60, 90, 120)
+2)	How many days of sampling do we need to detect X% change in occupancy over time? (e.g. 15, 30, 45, 60)
+3)	How does this vary depending on detection probability (e.g. 0.01, 0.05, 0.08, 0.2, 0.5)
+4)	How does this vary with the number of years of data (e.g. 3, 10, 20)
+
+Approach:
+•	Use “colext” function in unmarked package
+•	Simulate data using code in colext vignette / Jorge’s jaahumadap Github account with rare species code.R
+•	Run ~100 models to 100 realizations of simulated data for each combination of parameters of interest to generate a distribution
+•	Start with one species with one model to explore the number of simulations needed to capture the distribution, then expand.
+
+PART II
+Examine sensitivity of the WPI to changes in occupancy, richness and evenness
+
+	Questions:
+1)	When all species are declining at X%, at what point does the WPI detect change?
+2)	When all species are increasing at X%, at what point does the WPI detect change?	
+3)	What proportion of species need to be lost before seeing changes in the WPI?
+4)	What level of change in dominance/evenness is needed before seeing changes?
+
+	Approach:
+•	Simulate an X% decline in occupancy (set colonization = 0), then simulate an X% increase in occupancy (set extinction = 0)
+•	Start with most pessimistic pattern of all species decreasing at X% (e.g. 10%, 20%, 30%, 50%); similarly start with most optimistic pattern of all species increasing at X%
+•	For changes in species richness, remove X% of species at the middle time step (e.g. 1%, 10%, 25%, 50%)
+•	For changes in dominance/evenness, alter community from completely even to a single species dominating.
+
+
