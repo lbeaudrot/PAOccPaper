@@ -1,18 +1,5 @@
----
-title: "Simulation analysis - dynamic models"
-author: "Jorge A. Ahumada"
-date: "March 17, 2016"
-output: html_document
----
+#Test code
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-library(unmarked)
-```
-
-### Function to simulate the data
-Using this function to simulate a dynamic occupancy model with *n* points, *t* years (primary periods), *d* days (secondary periods), initial occupancy $\psi$, survival probability $\phi$, colonization probability $\gamma$ and detection probabilty *p*:
-```{r cars}
 data.generator<-function(points,days,psi,p,phi,gamma,years) {
         require(unmarked)
         #first year of data
@@ -27,13 +14,13 @@ data.generator<-function(points,days,psi,p,phi,gamma,years) {
         yk<-array(NA,dim=c(points,days,years))
         yk[,,1]<-y1
         for(k in 2:years){
-        #generate the deterministic part of the model
+                #generate the deterministic part of the model
                 occ<-apply(yk[,,k-1],1,max,na.rm=T)
                 z<-rbinom(points,1,occ*phi+(1-occ)*gamma)
-        #generate the observations
-        for(i in 1:points)
-                yk[i,,k]<-rbinom(days,1,z[i]*p)
-     
+                #generate the observations
+                for(i in 1:points)
+                        yk[i,,k]<-rbinom(days,1,z[i]*p)
+                
         }  
         # convert results to a two dimensional matrix for colext
         yk <- matrix(yk, points, days*years)
@@ -41,19 +28,14 @@ data.generator<-function(points,days,psi,p,phi,gamma,years) {
         # store data in an unmarkedMultFrame object so it is ready for analysis
         yUMF <- unmarkedMultFrame(y = yk, numPrimary = years)
         yUMF
- } 
-```
-Simulate some data:
-```{r}
+} 
+
 set.seed(400)
 data <- data.generator(points = 30,days = 30, psi = 0.5, p = 0.2, phi = 0.2, 
                        gamma = 0.1, years = 5)
 
 #Look at the first year of data
 summary(data)
-```
-Now, fit a dynamic occupancy model using colext
-```{r}
 model <- colext(psiformula = ~1,gammaformula = ~1,epsilonformula = ~1, 
                 pformula = ~1, data = data, method = "BFGS",se = FALSE)
 summary(model)
@@ -61,14 +43,10 @@ backTransform(model,type=c("psi"))
 backTransform(model,type=c("col"))
 backTransform(model,type=c("ext"))
 backTransform(model,type=c("det"))
-```
-Now compare the naive occupancy from the simulation to the fitted occupancy:
-```{r}
+
 data3d <- array(data@y,dim = c(30,30,5))
 obs <- apply(apply(data3d,c(1,3),function(z){max(z)}),2,sum)/30
-mod <- as.numeric(projected(model)[2,])
+mod <- as.numeric(smoothed(model)[,2])
 
-plot(1:5, obs, type="p"); lines(1:5, mod)
-```
-
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+plot(1:5, obs, type="p")
+lines(1:5, mod)
