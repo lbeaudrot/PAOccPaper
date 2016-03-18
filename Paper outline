@@ -4,7 +4,7 @@ PART I
 Examine power of sampling design for detecting changes in occupancy over time
 	
 Questions:
-1)	How many sample sites do we need to detect X% change in occupancy over time?  (e.g. 30, 60, 90, 120)
+1)	How many sample sites do we need to detect X% change in occupancy over time?  (e.g. 10, 30, 60, 90, 120)
 2)	How many days of sampling do we need to detect X% change in occupancy over time? (e.g. 15, 30, 45, 60)
 3)	How does this vary depending on detection probability (e.g. 0.01, 0.05, 0.08, 0.2, 0.5)
 4)	How does this vary with the number of years of data (e.g. 3, 10, 20)
@@ -14,6 +14,9 @@ Approach:
 •	Simulate data using code in colext vignette / Jorge’s jaahumadap Github account with rare species code.R
 •	Run ~100 models to 100 realizations of simulated data for each combination of parameters of interest to generate a distribution
 •	Start with one species with one model to explore the number of simulations needed to capture the distribution, then expand.
+-       Detect change by doing a logistic regression on the expectations and examine
+-       What levels of change (1%, 5%, 10%, 50%)
+-       5 levels of sample size * 4 levels of change * 4 levels number of days * 5 levels of detection probabiluity * three levels of number of years = 1200 combinations
 
 PART II
 Examine sensitivity of the WPI to changes in occupancy, richness and evenness
