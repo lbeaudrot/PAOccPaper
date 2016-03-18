@@ -46,7 +46,6 @@ backTransform(model,type=c("det"))
 
 data3d <- array(data@y,dim = c(30,30,5))
 obs <- apply(apply(data3d,c(1,3),function(z){max(z)}),2,sum)/30
-mod <- as.numeric(smoothed(model)[,2])
+mod <- as.numeric(projected(model)[2,])
 
-plot(1:5, obs, type="p")
-lines(1:5, mod)
+plot(1:5, obs, type="p"); lines(1:5, mod)

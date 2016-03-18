@@ -46,8 +46,8 @@ data.generator<-function(points,days,psi,p,phi,gamma,years) {
 Simulate some data:
 ```{r}
 set.seed(400)
-data <- data.generator(points = 30,days = 30, psi = 0.5, p = 0.2, phi = 0.2, 
-                       gamma = 0.1, years = 5)
+data <- data.generator(points = 30,days = 30, psi = 1, p = 0.1, phi = 0.8, 
+                       gamma = 0, years = 5)
 
 #Look at the first year of data
 summary(data)
@@ -70,5 +70,3 @@ mod <- as.numeric(projected(model)[2,])
 
 plot(1:5, obs, type="p"); lines(1:5, mod)
 ```
-
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
