@@ -31,8 +31,8 @@ data.generator<-function(points,days,psi,p,phi,gamma,years) {
 } 
 
 set.seed(400)
-data <- data.generator(points = 30,days = 30, psi = 0.5, p = 0.2, phi = 0.2, 
-                       gamma = 0.1, years = 5)
+data <- data.generator(points = 30,days = 30, psi = 0.9, p = 0.2, phi = 0.9, 
+                       gamma = 0, years = 5)
 
 #Look at the first year of data
 summary(data)
@@ -44,8 +44,41 @@ backTransform(model,type=c("col"))
 backTransform(model,type=c("ext"))
 backTransform(model,type=c("det"))
 
+y <- round(t(smoothed(model))*30)
+lrmodel <- glm(y ~ c(1:5), family = "binomial")
+
 data3d <- array(data@y,dim = c(30,30,5))
-obs <- apply(apply(data3d,c(1,3),function(z){max(z)}),2,sum)/30
+obs <- apply(apply(data3d,c(1,3),max),2,sum)/dim(data3d)[1]
 mod <- as.numeric(projected(model)[2,])
 
 plot(1:5, obs, type="p"); lines(1:5, mod)
+
+simulatetrend <- function(points = 30,days = 30, psi = 0.5, p = 0.2, phi = 0.2, gamma = 0.1, years = 5, nsim = 5) {
+         #store results
+        results <- matrix(NA, nr = nsim, nc = years)
+        logisticRes <- matrix(NA, nr = nsim, nc = 2)
+        time <- 1:years
+        for (i in 1:nsim) {
+                #generate data and store projected results
+                data <- data.generator(points,days,psi,p,phi,gamma,years)
+                model <- colext(~1, ~1, ~1, ~1, data = data, method = "BFGS",se = FALSE)
+                results[i,] <- as.numeric(smoothed(model)[2,])
+                # Calculate logistic regression
+                y <- round(t(smoothed(model))*points)
+                lrmodel <- glm(y ~ time, family = "binomial")
+                logisticRes[i,] <- lrmodel$coeff
+        }
+        list(logistic = logisticRes, results = results)
+}
+
+system.time(test <- simulatetrend(points = 100, psi = 0.9, gamma = 0, phi = 0.95, nsim = 100))
+
+res <- data.frame(test$results, id = 1:100)
+names(res) <- c(1:(ncol(res)-1),"id")
+res <- melt(res,"id")
+names(res)[2] <- "year"
+ggplot(res, aes(x=year,y=value, group=id))+geom_line(alpha=0.2)
+
+slopes <- data.frame(test$logistic)
+#ggplot(slopes,aes(x=exp(X2))) + geom_histogram()
+ggplot(slopes,aes(x=exp(X1))) + geom_histogram()
