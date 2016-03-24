@@ -6,7 +6,6 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
 library(unmarked)
 library(ggplot2)
 ```
@@ -78,10 +77,11 @@ plot(1:5, obs, type="p",ylim=c(0,1)); lines(1:5, mod); lines(1:5, mods, lty=2)
 Here is a function that repats this process for an arbitrary number of simulations *nsim* and also fits a logistic regression for each simulation, returning both the time series and the parameters of the logistic regression:
 
 ```{r}
-simulatetrend <- function(points = 30,days = 30, psi = 0.5, p = 0.2, phi = 0.2, gamma = 0.1, years = 5, nsim = 5) {
+simulatetrend <- function(points = 30,days = 30, psi = 0.5, p = 0.2, phi = 0.2, gamma = 0, years = 5, nsim = 5) {
          #store results
         results <- matrix(NA, nr = nsim, nc = years)
         logisticRes <- matrix(NA, nr = nsim, nc = 2)
+        linearRes <- matrix(NA, nr = nsim, nc = 2)
         time <- 1:years
         for (i in 1:nsim) {
                 #generate data and store projected results
@@ -92,13 +92,17 @@ simulatetrend <- function(points = 30,days = 30, psi = 0.5, p = 0.2, phi = 0.2, 
                 y <- round(t(smoothed(model))*points)
                 lrmodel <- glm(y ~ time, family = "binomial")
                 logisticRes[i,] <- lrmodel$coeff
+                # Calculate a linear regression
+                y <- smoothed(model)[2,]
+                lmodel <- lm (y ~ time)
+                linearRes[i,] <- lmodel$coefficients
         }
-        list(logistic = logisticRes, results = results)
+        list(logistic = logisticRes, linear = linearRes,results = results)
 }
 ```
 Running *simulatetrend* with 100 simulations and a 5% decrease in occupancy:
-```{r, cache=T}
-system.time(test <- simulatetrend(points = 100, psi = 0.9, gamma = 0, phi = 0.95, nsim = 100))
+```{r, cache = TRUE}
+test <- simulatetrend(points = 100, psi = 0.9, gamma = 0, phi = 0.95, nsim = 100)
 ```
 and then graphing the results:
 ```{r,echo=FALSE}
@@ -109,7 +113,7 @@ names(res)[2] <- "year"
 ggplot(res, aes(x=year,y=value, group=id))+geom_line(alpha=0.2)
 ```
 examine the distribution of the slope:
-```{r, echo = FALSE, messages=FALSE}
-slopes <- data.frame(test$logistic)
-ggplot(slopes,aes(x=exp(X1))) + geom_histogram(bins=20)
+```{r}
+sl <- data.frame(test$linear)
+ggplot(sl,aes(x=X2)) + geom_histogram()
 ```
