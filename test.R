@@ -64,38 +64,63 @@ mod <- as.numeric(projected(model)[2,])
 
 plot(1:5, obs, type="p"); lines(1:5, mod) ; lines(lmodel,lty=2)
 
-simulatetrend <- function(points = 30,days = 30, psi = 0.5, p = 0.2, phi = 0.2, gamma = 0.1, years = 5, nsim = 5) {
-         #store results
+simulatetrend <- function(points = 10,days = 30, psi = 0.5, p = 0.2, phi = 0.2, gamma = 0, years = 5, nsim = 5) {
+        #store results
         results <- matrix(NA, nr = nsim, nc = years)
         logisticRes <- matrix(NA, nr = nsim, nc = 2)
         linearRes <- matrix(NA, nr = nsim, nc = 2)
+        gm_lambda <- numeric()
         time <- 1:years
         for (i in 1:nsim) {
                 #generate data and store projected results
                 data <- data.generator(points,days,psi,p,phi,gamma,years)
                 model <- colext(~1, ~1, ~1, ~1, data = data, method = "BFGS",se = FALSE)
                 results[i,] <- as.numeric(smoothed(model)[2,])
+                
+                #Calculate geometric mean of lambda
+                lambda <- results[i,2:years]/results[i,1:(years-1)]
+                gm_lambda[i] <- -(gm_mean(lambda) - 1)
                 # Calculate logistic regression
                 y <- round(t(smoothed(model))*points)
-                lrmodel <- glm(y ~ time, family = "binomial")
-                logisticRes[i,] <- lrmodel$coeff
+                #lrmodel <- glm(y ~ time, family = "binomial")
+                #logisticRes[i,] <- lrmodel$coeff
+                
                 # Calculate a linear regression
-                y <- smoothed(model)[2,]
-                lmodel <- lm (y ~ time)
-                linearRes[i,] <- lmodel$coefficients
+                #y <- smoothed(model)[2,]
+                #lmodel <- lm (y ~ time)
+                #linearRes[i,] <- lmodel$coefficients
         }
-        list(logistic = logisticRes, linear = linearRes,results = results)
+        list(gmlambda = gm_lambda,logistic = logisticRes, linear = linearRes,results = results)
 }
 
-system.time(test <- simulatetrend(points = 100, psi = 0.5, gamma = 0, phi = 0.95, nsim = 200))
-
-res <- data.frame(test$results, id = 1:200)
+system.time(test <- simulatetrend(points = 50, psi = 0.9, gamma = 0, phi = 0.8, nsim = 100))
+require(ggplot2)
+res <- data.frame(test$results, id = 1:100)
 names(res) <- c(1:(ncol(res)-1),"id")
 res <- melt(res,"id")
 names(res)[2] <- "year"
 ggplot(res, aes(x=year,y=value, group=id))+geom_line(alpha=0.2)
 
-slopes <- as.data.frame(test$linear)
-names(slopes) <- c("int","slope")
+slopes <- as.data.frame(test$gmlambda)
+#indx <- slopes == 1
+#slopes[indx] <- 0
+names(slopes) <- c("slope")
 #ggplot(slopes,aes(x=exp(X2))) + geom_histogram()
-ggplot(slopes,aes(x=slope)) + geom_histogram()
+ggplot(slopes,aes(x=slope)) + geom_histogram() + geom_density()
+
+gm_mean = function(x, na.rm=TRUE){
+        exp(sum(log(x[x > 0]), na.rm=na.rm) / length(x))
+}
+gm_mean = function(x, na.rm=TRUE, zero.propagate = FALSE){
+        if(any(x < 0, na.rm = TRUE)){
+                return(NaN)
+        }
+        if(zero.propagate){
+                if(any(x == 0, na.rm = TRUE)){
+                        return(0)
+                }
+                exp(mean(log(x), na.rm = na.rm))
+        } else {
+                exp(sum(log(x[x > 0]), na.rm=na.rm) / length(x))
+        }
+}
