@@ -110,7 +110,7 @@ simulatetrend <- function(points = 10,days = 30, psi = 0.5, p = 0.2, phi = 0.2, 
 }
 ```
 Running *simulatetrend* with 100 simulations and a 5% decrease in occupancy:
-```{r, cache = FALSE}
+```{r, cache = TRUE}
 test <- simulatetrend(points = 100, psi = 0.9, gamma = 0, phi = 0.8, nsim = 100)
 ```
 and then graphing the results:
@@ -122,7 +122,7 @@ names(res)[2] <- "year"
 ggplot(res, aes(x=year,y=value, group=id))+geom_line(alpha=0.2)
 ```
 examine the distribution of the slope:
-```{r}
+```{r, echo = FALSE, message=FALSE}
 slopes <- as.data.frame(test$gmlambda)
 names(slopes) <- c("slope")
 ggplot(slopes,aes(x=slope)) + geom_histogram() + geom_density()

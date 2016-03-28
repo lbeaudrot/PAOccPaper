@@ -102,10 +102,7 @@ names(res)[2] <- "year"
 ggplot(res, aes(x=year,y=value, group=id))+geom_line(alpha=0.2)
 
 slopes <- as.data.frame(test$gmlambda)
-#indx <- slopes == 1
-#slopes[indx] <- 0
-names(slopes) <- c("slope")
-#ggplot(slopes,aes(x=exp(X2))) + geom_histogram()
+names(slopes) <- c("slope")#ggplot(slopes,aes(x=exp(X2))) + geom_histogram()
 ggplot(slopes,aes(x=slope)) + geom_histogram() + geom_density()
 
 gm_mean = function(x, na.rm=TRUE){
