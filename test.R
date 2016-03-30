@@ -121,3 +121,45 @@ gm_mean = function(x, na.rm=TRUE, zero.propagate = FALSE){
                 exp(sum(log(x[x > 0]), na.rm=na.rm) / length(x))
         }
 }
+library(parallel)
+library(foreach)
+
+library(doParallel)
+
+
+
+simulatetrend <- function(points = 10,days = 30, psi = 0.5, p = 0.2, phi = 0.2, gamma = 0, years = 5, nsim = 5) {
+        #store results
+        #gm_lambda <- numeric()
+        time <- 1:years
+        results <- foreach(i = 1:nsim, .combine = rbind, .packages = "unmarked", .export = c("data.generator","gm_mean")) %dopar% {
+                #generate data and store projected results
+                data <- data.generator(points,days,psi,p,phi,gamma,years)
+                model <- colext(~1, ~1, ~1, ~1, data = data, method = "BFGS",se = FALSE)
+                timeseries <- as.numeric(smoothed(model)[2,])
+                
+                #Calculate geometric mean of lambda
+                lambda <- timeseries[2:years]/timeseries[1:(years-1)]
+                lambda <- -(gm_mean(lambda) - 1)
+                c(timeseries,lambda)
+        }
+        results
+        #list(gmlambda = gm_lambda, results = results)
+}
+# Calculate the number of cores
+no_cores <- detectCores() - 1
+
+cl<-makeCluster(no_cores)
+registerDoParallel(cl)
+
+test <- simulatetrend(points = 10, psi = 0.9, gamma = 0, phi = 0.8, nsim = 100)
+
+res <- data.frame(test)
+slopes <- data.frame(slopes = test[,ncol(res)])
+res <- res[,-ncol(res)]
+res <- data.frame(res, id = 1:nrow(res))
+names(res) <- c(1:(ncol(res)-1), "id")
+
+res <- melt(res,c("id"))
+names(res)[2] <- "year"
+ggplot(res, aes(x=year,y=value, group=id))+geom_line(alpha=0.2)

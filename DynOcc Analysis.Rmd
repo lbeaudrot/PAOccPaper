@@ -8,6 +8,10 @@ output: html_document
 ```{r setup, include=FALSE}
 library(unmarked)
 library(ggplot2)
+library(parallel)
+library(foreach)
+library(doParallel)
+
 gm_mean = function(x, na.rm=TRUE, zero.propagate = FALSE){
   if(any(x < 0, na.rm = TRUE)){
     return(NaN)
@@ -89,42 +93,53 @@ plot(1:5, obs, type="p",ylim=c(0,1)); lines(1:5, mod); lines(1:5, mods, lty=2)
 ```
 Here is a function that repats this process for an arbitrary number of simulations *nsim* and also fits a logistic regression for each simulation, returning both the time series and the parameters of the logistic regression:
 
-```{r}
+```{r = simulatetredn function}
 simulatetrend <- function(points = 10,days = 30, psi = 0.5, p = 0.2, phi = 0.2, gamma = 0, years = 5, nsim = 5) {
         #store results
-        results <- matrix(NA, nr = nsim, nc = years)
-        gm_lambda <- numeric()
+        #gm_lambda <- numeric()
         time <- 1:years
-        
-        for (i in 1:nsim) {
+        results <- foreach(i = 1:nsim, .combine = rbind, .packages = "unmarked", .export = c("data.generator","gm_mean")) %dopar% {
                 #generate data and store projected results
                 data <- data.generator(points,days,psi,p,phi,gamma,years)
                 model <- colext(~1, ~1, ~1, ~1, data = data, method = "BFGS",se = FALSE)
-                results[i,] <- as.numeric(smoothed(model)[2,])
+                timeseries <- as.numeric(smoothed(model)[2,])
                 
                 #Calculate geometric mean of lambda
-                lambda <- results[i,2:years]/results[i,1:(years-1)]
-                gm_lambda[i] <- -(gm_mean(lambda) - 1)
-                }
-        list(gmlambda = gm_lambda,results = results)
+                lambda <- timeseries[2:years]/timeseries[1:(years-1)]
+                lambda <- -(gm_mean(lambda) - 1)
+                c(timeseries,lambda)
+        }
+        results
+        #list(gmlambda = gm_lambda, results = results)
 }
 ```
 Running *simulatetrend* with 100 simulations and a 5% decrease in occupancy:
+
+# Setting up the machine for parallel processing
+```{r, echo = FALSE}
+no_cores <- detectCores() - 1
+cl<-makeCluster(no_cores)
+registerDoParallel(cl)
+```
 ```{r, cache = TRUE}
+# Run a simulation
 test <- simulatetrend(points = 100, psi = 0.9, gamma = 0, phi = 0.8, nsim = 100)
 ```
 and then graphing the results:
 ```{r,echo=FALSE}
-res <- data.frame(test$results, id = 1:100)
-names(res) <- c(1:(ncol(res)-1),"id")
-res <- melt(res,"id")
+stopCluster(cl)
+
+res <- data.frame(test)
+slopes <- data.frame(slopes = test[,ncol(res)])
+res <- res[,-ncol(res)]
+res <- data.frame(res, id = 1:nrow(res))
+names(res) <- c(1:(ncol(res)-1), "id")
+
+res <- melt(res,c("id"))
 names(res)[2] <- "year"
 ggplot(res, aes(x=year,y=value, group=id))+geom_line(alpha=0.2)
 ```
-examine the distribution of the slope:
+examine the distribution of the geometric mean of $\lambda=\frac{\psi_{t+1}}{\psi_t}$
 ```{r, echo = FALSE, message=FALSE}
-slopes <- as.data.frame(test$gmlambda)
-names(slopes) <- c("slope")
-ggplot(slopes,aes(x=slope)) + geom_histogram() + geom_density()
-
+ggplot(slopes,aes(x=slopes)) + geom_histogram() + geom_density()
 ```
