@@ -113,17 +113,18 @@ simulatetrend <- function(points = 10,days = 30, psi = 0.5, p = 0.2, phi = 0.2, 
         #list(gmlambda = gm_lambda, results = results)
 }
 ```
-Running *simulatetrend* with 100 simulations and a 5% decrease in occupancy:
+Running *simulatetrend* with 100 simulations and a 10% decrease in occupancy:
 
-# Setting up the machine for parallel processing
+
 ```{r, echo = FALSE}
+# Setting up the machine for parallel processing
 no_cores <- detectCores() - 1
 cl<-makeCluster(no_cores)
 registerDoParallel(cl)
 ```
 ```{r, cache = TRUE}
 # Run a simulation
-test <- simulatetrend(points = 100, psi = 0.9, gamma = 0, phi = 0.8, nsim = 100)
+test <- simulatetrend(points = 100, psi = 0.9, gamma = 0, phi = 0.9, nsim = 100)
 ```
 and then graphing the results:
 ```{r,echo=FALSE}
@@ -137,7 +138,8 @@ names(res) <- c(1:(ncol(res)-1), "id")
 
 res <- melt(res,c("id"))
 names(res)[2] <- "year"
-ggplot(res, aes(x=year,y=value, group=id))+geom_line(alpha=0.2)
+ggplot(res, aes(x=year, y= value)) + geom_violin() + geom_line(aes(group=id),alpha=0.2)
+
 ```
 examine the distribution of the geometric mean of $\lambda=\frac{\psi_{t+1}}{\psi_t}$
 ```{r, echo = FALSE, message=FALSE}

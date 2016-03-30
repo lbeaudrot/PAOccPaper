@@ -163,3 +163,5 @@ names(res) <- c(1:(ncol(res)-1), "id")
 res <- melt(res,c("id"))
 names(res)[2] <- "year"
 ggplot(res, aes(x=year,y=value, group=id))+geom_line(alpha=0.2)
+ggplot(res, aes(x=year, y= value)) + geom_violin() + geom_line(aes(group=id),alpha=0.2)
+ggplot(slopes,aes(x=slopes)) + geom_histogram() + geom_density()
