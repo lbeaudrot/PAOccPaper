@@ -104,10 +104,13 @@ simulatetrend <- function(points = 10,days = 30, psi = 0.5, p = 0.2, phi = 0.2, 
                 model <- colext(~1, ~1, ~1, ~1, data = data, method = "BFGS",se = FALSE)
                 timeseries <- as.numeric(smoothed(model)[2,])
                 
+                #calculate difference between year 1 and year n
+                diff1_n <- timeseries[1] - timeseries[-1]
+                
                 #Calculate geometric mean of lambda
                 lambda <- timeseries[2:years]/timeseries[1:(years-1)]
                 lambda <- -(gm_mean(lambda) - 1)
-                c(timeseries,lambda)
+                c(timeseries,diff1_n,lambda)
         }
         results
         #list(gmlambda = gm_lambda, results = results)
@@ -124,7 +127,7 @@ registerDoParallel(cl)
 ```
 ```{r, cache = TRUE}
 # Run a simulation
-test <- simulatetrend(points = 100, psi = 0.9, gamma = 0, phi = 0.9, nsim = 100)
+test <- simulatetrend(points = 60, psi = 0.2, gamma = 0, phi = 0.95, nsim = 200, years = 10)
 ```
 and then graphing the results:
 ```{r,echo=FALSE}
@@ -132,16 +135,30 @@ stopCluster(cl)
 
 res <- data.frame(test)
 slopes <- data.frame(slopes = test[,ncol(res)])
-res <- res[,-ncol(res)]
+changes <- data.frame(test[,(ncol(res)/2+1):(ncol(res)-1)])
+res <- res[,-c((ncol(res)/2+1):(ncol(res)))]
 res <- data.frame(res, id = 1:nrow(res))
 names(res) <- c(1:(ncol(res)-1), "id")
 
-res <- melt(res,c("id"))
-names(res)[2] <- "year"
+res <- melt(res,c("id"), variable_name = "year")
+#names(res)[2] <- "year"
 ggplot(res, aes(x=year, y= value)) + geom_violin() + geom_line(aes(group=id),alpha=0.2)
 
 ```
 examine the distribution of the geometric mean of $\lambda=\frac{\psi_{t+1}}{\psi_t}$
 ```{r, echo = FALSE, message=FALSE}
 ggplot(slopes,aes(x=slopes)) + geom_histogram() + geom_density()
+```
+and the number of years it takes to detect the change
+```{r}
+names(changes) <- c(1:ncol(changes))
+confint <- apply(changes,2,quantile,c(0.1,0.9))
+#year where change is
+#round(confint,digits = 2)
+y <- which(round(confint[1,],2) > 0)
+ifelse(length(y)==0,0,min(y))
+
+#graph the results
+changes <- melt(changes, variable_name = "year")
+ggplot(changes, aes(x=year, y= value)) + geom_violin() + ylab("year(1) - year(n)")
 ```
