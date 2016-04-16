@@ -33,6 +33,8 @@ for(i in 1:dim(mat)[1]){
 
 stopCluster(cl)
 
+write.csv(melt.list(result), file="result.csv", row.names=TRUE)
+
 # Run second loop to calculate changes for each set of simulation values
 
 result2 <- list()
@@ -55,4 +57,7 @@ for(i in 1:length(result)){
 }
 
 det.year <- data.frame(y.first=y.first, mat, input=names(result))
+write.csv(melt.list(result2), file="result2.csv", row.names=TRUE)
+write.csv(det.year, file="det.year.csv", row.names=TRUE)
+
 
