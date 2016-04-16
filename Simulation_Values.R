@@ -26,6 +26,7 @@ clusterSetRNGStream(cl=cl, iseed=400)
 # Run loop to generate simulations for each combination of parameters in object "mat"
 result <- list()
 for(i in 1:dim(mat)[1]){
+    print(i)
     test <- simulatetrend(points=mat[i,1], days=mat[i,2], psi=mat[i,3], p=mat[i,4], phi=mat[i,5], gamma=mat[i,6], years=mat[i,7], nsim=mat[i,8])
     result[[i]] <- test
     names(result)[i] <- paste("input values", paste(mat[i,], collapse=", "))
@@ -41,6 +42,7 @@ result2 <- list()
 y.first <- vector()
 
 for(i in 1:length(result)){
+    print(i)
     res <- data.frame(result[[i]])
     slopes <- data.frame(slopes=res[,ncol(res)])
     changes <- data.frame(res[,(ncol(res)/2+1):(ncol(res)-1)])
