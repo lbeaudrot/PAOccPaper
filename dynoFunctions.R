@@ -59,7 +59,7 @@ simulatetrend <- function(points, days, psi, p, phi, gamma, years, nsim) {
                 #generate data and store projected results
                 set.seed(seeds[i])
                 data <- data.generator(points,days,psi,p,phi,gamma,years)
-                model <- colext(~1, ~1, ~1, ~1, data = data, method = "BFGS",se = FALSE)
+                model <- colext(~1, ~1, ~1, ~1, data = data, method = "L-BFGS-B",se = FALSE, lower=0, upper=1)
                 timeseries <- as.numeric(smoothed(model)[2,])
                 
                 #calculate difference between year 1 and year n
